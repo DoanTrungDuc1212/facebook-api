@@ -44,7 +44,7 @@ const createAdSet = async (targeting, query, campaignId) => {
                 campaign_id: campaignId,
                 targeting: targeting,
                 start_time: query.start_date,
-                // end_time:  query.end_date, 
+                end_time:  query.end_date, 
                 status: "PAUSED",
                 access_token: global.globalAccessToken
             }
@@ -83,7 +83,7 @@ const createAdCreative = async ( query) => {
                     page_id: query.pageId,
                     link_data: {
                         image_hash: imageHash,
-                        link: `https://facebook.com/${query.pageId}`,
+                        link: `https://shopee.vn/`,
                         message: "try it out"
                     }
                 },
@@ -164,6 +164,7 @@ const searchInterest = async (interest) => {
 
 const list_interests = async(interests)=>{
     const result = [];
+
     for(const interest of interests){
         const interest_id = await searchInterest(interest);
         if (interest_id) {
@@ -196,6 +197,7 @@ const searchLanguages =  async(language)=>{
         });
         
         const result = response.data.data // Trả về danh sách các key ngôn ngữ
+        console.log(result[0])
         return result[0];
     } catch (error) {
         console.error('Error fetching languages:', error.response.data);
@@ -203,9 +205,8 @@ const searchLanguages =  async(language)=>{
     }
 };
 const list_language = async(languages)=>{
-    const result = [];
-    const items = [...languages];   
-    for(const language of items){
+    const result = [];  
+    for(const language of languages){
         const language_key = await searchLanguages(language);
         if (language_key) {
             result.push(language_key);
@@ -214,17 +215,54 @@ const list_language = async(languages)=>{
     console.log(result)
     return result;
 }
+//behaviors
+const searchBehavior = async (behavior) => {
+    try {
+        const response = await axios.get(
+            'https://graph.facebook.com/v13.0/search',
+            {
+                params: {
+                    q: behavior,
+                    type: 'adTargetingCategory',
+                    access_token: 'YOUR_ACCESS_TOKEN' // Thay YOUR_ACCESS_TOKEN bằng access token của bạn
+                }
+            }
+        );
+        const result = response.data.data;
+        console.log(result);
+		return result[0];
+    } catch (error) {
+        console.error("Error searching interests:", error.response ? error.response.data : error.message);
+    }
+};
+
+const list_Behavior = async(behaviors)=>{
+    const result = [];
+    for(const behavior of behaviors){
+        const behavior_id = await searchBehavior(behavior);
+        if (behavior_id) {
+            result.push(behavior_id);
+        } 
+    }
+    console.log(result)
+    return result;
+}
 const createAds = async ( query ) => {
     try {
-        console.log(await list_language(query.languages)
-    )
+        
         const targeting = {
-            geo_locations: { countries: query.countries },
+            geo_locations: { 
+                countries: query.countries,
+             },
             age_min: query.minimumAge,
             age_max: query.maximumAge,
             genders: gender(query.gender),
             interests: await list_interests(query.interests),
-            locales: await list_language(query.languages)
+            locales: [6],
+            publisher_platforms: [
+                "facebook"
+              ]
+            // behavior: await list_Behavior( query.behaviors)
         }
         // const accountId = query.accountId;
         // const pageId = query.pageId;

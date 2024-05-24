@@ -4,6 +4,7 @@ const passport = require('passport')
 const axios = require('axios')
 const createAd = require('./create-campaign')
 
+
 module.exports = (function() {   
 
     router.get('/', function(req, res){
@@ -46,7 +47,24 @@ module.exports = (function() {
 			console.error("Error list_account:",error.response ? error.response.data : error.message );
 		}
 	})
-	
+	router.get('/behavior', async (req, res) => {
+		try {
+			const response = await axios.get(
+				`https://graph.facebook.com/${global.globalversion}/search`,
+				{
+					params: {
+						type: "adTargetingCategory",
+						class: "behaviors",
+						q: "Online Shopping",
+						access_token: global.globalAccessToken
+					}
+				}
+			);
+			res.send(response.data)
+		} catch (error) {
+			console.error("Error searching interests:", error.response ? error.response.data : error.message);
+		}
+	});
 	router.get('/list_page', async(req, res)=>{
 		try{
 			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/me/accounts?fields=id,name&access_token=${global.globalAccessToken}`)
@@ -123,7 +141,7 @@ module.exports = (function() {
 	})
 	router.post	('/create-ad', async(req,res)=>{
 		try {
-			const query = req.query;
+			const query = req.body;
 			console.log(query);
             res.status(200).send(await createAd( query));
         } catch (error) {
