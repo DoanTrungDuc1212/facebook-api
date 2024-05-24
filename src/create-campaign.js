@@ -10,7 +10,7 @@ const createCampaign = async (query) => {
         const response = await axios.post(
             `https://graph.facebook.com/${global.globalversion}/act_${query.accountId}/campaigns`,
             {
-                name: 'Quảng cáo mimi',
+                name: "Quảng cáo MIMI",
                 objective: 'OUTCOME_TRAFFIC',
                 status: 'PAUSED',
                 special_ad_categories: [],
@@ -32,16 +32,14 @@ const createCampaign = async (query) => {
 // Bước 3: Tạo nhóm quảng cáo
 const createAdSet = async (targeting, query, campaignId) => {
     try {
+        const daily_budget = (query.daily_max_amount + query.daily_minimum_amount)/2;
         const response = await axios.post(
             `https://graph.facebook.com/${global.globalversion}/act_${query.accountId}/adsets`,
             {
-                name: "My Ad Set",
+                name: query.audienceName,
                 optimization_goal: "REACH",
                 billing_event: "IMPRESSIONS",
                 bid_amount: 5000,
-                daily_budget: query.amount,
-                daily_minimum_amount: query.daily_max_amount, 
-                daily_max_amount: query.daily_minimum_amount,
                 daily_budget: query.amount,
                 campaign_id: campaignId,
                 targeting: targeting,
@@ -65,7 +63,7 @@ const createAdSet = async (targeting, query, campaignId) => {
 const createAdCreative = async ( query) => {
     try {
         const formData = new FormData();
-        formData.append('filename', fs.createReadStream("C:/Users/trung/source/repos/login_facebook_nodejs_passport/img/440943871_451016263975499_9164208717559773652_n.jpg"));
+        formData.append('filename', fs.createReadStream("C:/Users/trung/OneDrive/Máy tính/facebook-api/img/59163eeb9141c6011d8338a37fdfdc34.png"));
         formData.append('access_token', global.globalAccessToken);
         const imageResponse = await axios.post(
             `https://graph.facebook.com/${global.globalversion}/act_${query.accountId}/adimages`,
@@ -142,24 +140,23 @@ const createAd = async ( query, adSetId, creativeId) => {
         console.error("Error creating Ad:", error.response ? error.response.data : error.message);
     }
 };
-const searchInterest =  async (query) => {
+
+//interest
+const searchInterest = async (interest) => {
     try {
         const response = await axios.get(
             `https://graph.facebook.com/${global.globalversion}/search`,
             {
                 params: {
-                    fields: "id",
+                    fields: "id,name",
                     type: "adinterest",
-                    q: query,
+                    q: interest,
                     access_token: global.globalAccessToken
                 }
             }
         );
-        const result = [];
-			for(const item of response.data.data){
-				result.push(item.id);
-			}
-		return result;
+        const result = response.data.data;
+		return result[0];
     } catch (error) {
         console.error("Error searching interests:", error.response ? error.response.data : error.message);
     }
@@ -167,22 +164,67 @@ const searchInterest =  async (query) => {
 
 const list_interests = async(interests)=>{
     const result = [];
-    for(const interest in interests){
-        const interest_list_id = await searchInterest(interest);
-        result.push(interest_list_id);
+    for(const interest of interests){
+        const interest_id = await searchInterest(interest);
+        if (interest_id) {
+            result.push(interest_id);
+        } 
+    }
+    console.log(result)
+    return result;
+}
+//gender
+const gender = (items) => {
+    const result = [];
+    const list_item = [...items]
+    for (const item of list_item) {
+        if (item === "male") result.push(1);
+        else result.push(2);
     }
     return result;
 }
-
+//language
+const searchLanguages =  async(language)=>{
+    try {
+        const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/search`, {
+            params: {
+                fields: "key",
+                type: 'adlocale',
+                q: language,
+                access_token: global.globalAccessToken
+            }
+        });
+        
+        const result = response.data.data // Trả về danh sách các key ngôn ngữ
+        return result[0];
+    } catch (error) {
+        console.error('Error fetching languages:', error.response.data);
+        throw new Error('Failed to fetch languages');
+    }
+};
+const list_language = async(languages)=>{
+    const result = [];
+    const items = [...languages];   
+    for(const language of items){
+        const language_key = await searchLanguages(language);
+        if (language_key) {
+            result.push(language_key);
+        } 
+    }
+    console.log(result)
+    return result;
+}
 const createAds = async ( query ) => {
     try {
+        console.log(await list_language(query.languages)
+    )
         const targeting = {
             geo_locations: { countries: query.countries },
-            age_min: query.age_min,
-            age_max: query.age_max,
-            genders: query.gender,
-            interests: list_interests(query.interests),
-            locales: query.locales
+            age_min: query.minimumAge,
+            age_max: query.maximumAge,
+            genders: gender(query.gender),
+            interests: await list_interests(query.interests),
+            locales: await list_language(query.languages)
         }
         // const accountId = query.accountId;
         // const pageId = query.pageId;
@@ -196,7 +238,7 @@ const createAds = async ( query ) => {
         // const end_date = query.end_date;
         // const daily_minimum_amount = query.daily_minimum_amount;
         // const daily_max_amount = query.daily_max_amount;
-
+        console.log(targeting);
 
         const campaignId = await createCampaign(query);
         const adSetId = await createAdSet(targeting, query, campaignId);

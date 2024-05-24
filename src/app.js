@@ -36,7 +36,6 @@ passport.use(new FacebookStrategy({
     global.globalAccessToken = accessToken; 
     process.nextTick(function () {
       console.log(accessToken, refreshToken, profile);
-      global.userId = profile.id;
       return done(null, profile);
     });
   }

@@ -56,11 +56,76 @@ module.exports = (function() {
 			console.error("Error list_page:",error.response ? error.response.data : error.message );
 		}
 	})
+	router.get('/searchInterest',async (req, res) => {
+		try {
+			const response = await axios.get(
+				`https://graph.facebook.com/${global.globalversion}/search`,
+				{
+					params: {
+						fields: "id,name",
+						type: "adinterest",
+						q: " Handbags",
+						access_token: global.globalAccessToken
+					}
+				}
+			);
+			const result = response.data.data;
+			res.json(result[0]);	
+		} catch (error) {
+			console.error("Error searching interests:", error.response ? error.response.data : error.message);
+		}
+	});
+	const searchInterest = async (interest) => {
+		try {
+			const response = await axios.get(
+				`https://graph.facebook.com/${global.globalversion}/search`,
+				{
+					params: {
+						fields: "id,name",
+						type: "adinterest",
+						q: interest,
+						access_token: global.globalAccessToken
+					}
+				}
+			);
+			const result = response.data.data;
+			return result[0];	
+		} catch (error) {
+			console.error("Error searching interests:", error.response ? error.response.data : error.message);
+		}
+	};
+	router.get('/list_interests',  async(req, res)=>{
+		const result = [];
+		const interests = ["Fashion", "Handbags"]
+		for(const interest of interests){
+			const interest_id = await searchInterest(interest);
+			if (interest_id) {
+				result.push(interest_id);
+			} 
+		}
+		console.log(result)
+		return result;
+	});
+	router.get('/languages', async(req, res)=>{
+		try {
+			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/search`, {
+				params: {
+					type: 'adlocale',
+					q: 'English',
+					access_token: global.globalAccessToken
+				}
+			});
+			res.json(response.data.data) // Trả về danh sách các key ngôn ngữ
+		} catch (error) {
+			console.error('Error fetching languages:', error.response.data);
+			throw new Error('Failed to fetch languages');
+		}
+	})
 	router.post	('/create-ad', async(req,res)=>{
 		try {
-			const query = req.query
-            await createAd( query);
-            res.status(200).send('Facebook Ad Campaign created successfully');
+			const query = req.query;
+			console.log(query);
+            res.status(200).send(await createAd( query));
         } catch (error) {
             console.error('Error creating ad:', error);
             res.status(500).send('Error creating Facebook Ad Campaign');
