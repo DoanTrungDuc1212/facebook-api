@@ -8,18 +8,20 @@ const createAd = require('./create-campaign')
 module.exports = (function() {   
 
     router.get('/', function(req, res){
-	  res.render('index', { user: req.user });
+	 	res.render('index', { user: req.user});
 	});
-
+	// const profilePicUrl = `https://graph.facebook.com/${req.user.id}/picture?type=large&access_token=${req.user.accessToken}`;
+	
 	router.get('/login', function(req, res){
 	  //render page login html
 	});
 
-	router.get('/account', ensureAuthenticated, function(req, res){
-	  res.render('account', { user: req.user });
+	router.get('/account', ensureAuthenticated, async function(req, res){
+		const profilePicUrl = `https://graph.facebook.com/${req.user.id}/picture?type=large&access_token=${global.globalAccessToken}`;
+		res.render('account', { user: req.user , profilePicUrl});
 	});
 	// 'email', 'public_profile','publish_to_groups','pages_read_engagement', 'pages_manage_posts', 'pages_show_list', 'ads_management','pages_manage_ads'
-	router.get('/auth/facebook', passport.authenticate('facebook',{scope:[ 'pages_show_list', 'ads_management','pages_manage_ads'] }));
+	router.get('/auth/facebook', passport.authenticate('facebook',{scope:[ 'public_profile', 'pages_show_list', 'ads_management','pages_manage_ads'] }));
 
 	router.get('/auth/facebook/callback',
 	  passport.authenticate('facebook', { successRedirect : '/', failureRedirect: '/login' }),
@@ -47,7 +49,7 @@ module.exports = (function() {
 			console.error("Error list_account:",error.response ? error.response.data : error.message );
 		}
 	})
-	router.get('/behavior', async (req, res) => {
+	router.get('/behaviors', async (req, res) => {
 		try {
 			const response = await axios.get(
 				`https://graph.facebook.com/${global.globalversion}/search`,
@@ -55,12 +57,40 @@ module.exports = (function() {
 					params: {
 						type: "adTargetingCategory",
 						class: "behaviors",
-						q: "Online Shopping",
 						access_token: global.globalAccessToken
 					}
 				}
 			);
 			res.send(response.data)
+		} catch (error) {
+			console.error("Error searching interests:", error.response ? error.response.data : error.message);
+		}
+	});
+	router.get('/behavior', async (req, res) => {
+		const behaviors = [
+			"Online Shopping",
+			"Frequent Buyer"
+		]
+		const results = []
+		try {
+			for(const behavior of behaviors){
+				const response = await axios.get(
+					`https://graph.facebook.com/${global.globalversion}/search`,
+					{
+						params: {
+							type: "adTargetingCategory",
+							class: "behaviors",	
+							q: behavior,
+							access_token: global.globalAccessToken
+						}
+					}
+				);
+				const result = response.data.data;
+				for(const item in result){
+					results.push(result);
+				}
+			}
+			res.send(results);
 		} catch (error) {
 			console.error("Error searching interests:", error.response ? error.response.data : error.message);
 		}
@@ -74,21 +104,38 @@ module.exports = (function() {
 			console.error("Error list_page:",error.response ? error.response.data : error.message );
 		}
 	})
+	router.get('/a',async(req, res)=>{
+		try{
+			const response = await axios.get(`https://2af8-171-241-69-82.ngrok-free.app/list_page`)
+			res.send(response.data);
+		}catch (error) {
+			console.error("Error list_page:",error.response ? error.response.data : error.message );
+		}
+	})
 	router.get('/searchInterest',async (req, res) => {
+		const interests = ["Fashion", "Sneakers"];
+    	const results = [];
 		try {
-			const response = await axios.get(
-				`https://graph.facebook.com/${global.globalversion}/search`,
-				{
-					params: {
-						fields: "id,name",
-						type: "adinterest",
-						q: " Handbags",
-						access_token: global.globalAccessToken
+			for (const interest of interests) {
+				const response = await axios.get(
+					`https://graph.facebook.com/${global.globalversion}/search`,
+					{
+						params: {
+							fields: "id,name",
+							type: "adinterest",
+							q: interest,
+							access_token: global.globalAccessToken
+						}
 					}
+				);
+				const result = response.data.data;
+				console.log(interest);
+				for(const item in result){
+					console.log(result[item])
+					results.push(result[item]);
 				}
-			);
-			const result = response.data.data;
-			res.json(result[0]);	
+			}
+			res.json(results);
 		} catch (error) {
 			console.error("Error searching interests:", error.response ? error.response.data : error.message);
 		}
@@ -128,8 +175,9 @@ module.exports = (function() {
 		try {
 			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/search`, {
 				params: {
+					fields:"key",
 					type: 'adlocale',
-					q: 'English',
+					q: "English",
 					access_token: global.globalAccessToken
 				}
 			});

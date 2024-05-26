@@ -12,12 +12,14 @@ const createCampaign = async (query) => {
             {
                 name: "Quảng cáo MIMI",
                 objective: 'OUTCOME_TRAFFIC',
-                status: 'PAUSED',
+                status: 'ACTIVE',
+                daily_max_amount: query.daily_max_amount,
+                daily_minimum_amount: query.daily_minimum_amount,
                 special_ad_categories: [],
                 access_token: global.globalAccessToken
             }
         );
-
+        
         if (response.data && response.data.id) {
             const campaignId = response.data.id;
             console.log(`Successfully created campaign with ID: `, campaignId);
@@ -33,6 +35,7 @@ const createCampaign = async (query) => {
 const createAdSet = async (targeting, query, campaignId) => {
     try {
         const daily_budget = (query.daily_max_amount + query.daily_minimum_amount)/2;
+        console.log(daily_budget);
         const response = await axios.post(
             `https://graph.facebook.com/${global.globalversion}/act_${query.accountId}/adsets`,
             {
@@ -45,7 +48,7 @@ const createAdSet = async (targeting, query, campaignId) => {
                 targeting: targeting,
                 start_time: query.start_date,
                 end_time:  query.end_date, 
-                status: "PAUSED",
+                status: "ACTIVE",
                 access_token: global.globalAccessToken
             }
         );
@@ -63,7 +66,7 @@ const createAdSet = async (targeting, query, campaignId) => {
 const createAdCreative = async ( query) => {
     try {
         const formData = new FormData();
-        formData.append('filename', fs.createReadStream("C:/Users/trung/OneDrive/Máy tính/facebook-api/img/59163eeb9141c6011d8338a37fdfdc34.png"));
+        formData.append('filename', fs.createReadStream("./img/59163eeb9141c6011d8338a37fdfdc34.png"));
         formData.append('access_token', global.globalAccessToken);
         const imageResponse = await axios.post(
             `https://graph.facebook.com/${global.globalversion}/act_${query.accountId}/adimages`,
@@ -142,38 +145,33 @@ const createAd = async ( query, adSetId, creativeId) => {
 };
 
 //interest
-const searchInterest = async (interest) => {
+const searchInterest = async (query) => {
+    const interests = query;
+    const results = [];
     try {
-        const response = await axios.get(
-            `https://graph.facebook.com/${global.globalversion}/search`,
-            {
-                params: {
-                    fields: "id,name",
-                    type: "adinterest",
-                    q: interest,
-                    access_token: global.globalAccessToken
+        for (const interest of interests) {
+            const response = await axios.get(
+                `https://graph.facebook.com/${global.globalversion}/search`,
+                {
+                    params: {
+                        fields: "id,name",
+                        type: "adinterest",
+                        q: interest,
+                        access_token: global.globalAccessToken
+                    }
                 }
+            );
+            const result = response.data.data;
+            for(const item in result){
+                results.push(result[item]);
             }
-        );
-        const result = response.data.data;
-		return result[0];
+        }
+       return results;
     } catch (error) {
         console.error("Error searching interests:", error.response ? error.response.data : error.message);
     }
 };
 
-const list_interests = async(interests)=>{
-    const result = [];
-
-    for(const interest of interests){
-        const interest_id = await searchInterest(interest);
-        if (interest_id) {
-            result.push(interest_id);
-        } 
-    }
-    console.log(result)
-    return result;
-}
 //gender
 const gender = (items) => {
     const result = [];
@@ -185,68 +183,61 @@ const gender = (items) => {
     return result;
 }
 //language
-const searchLanguages =  async(language)=>{
+const searchLanguages =  async(query)=>{
+    const languages = query;
+    const results = [];
     try {
-        const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/search`, {
-            params: {
-                fields: "key",
-                type: 'adlocale',
-                q: language,
-                access_token: global.globalAccessToken
+
+        for(const language of languages){
+            const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/search`, {
+                params: {
+                    fields: "key",
+                    type: 'adlocale',
+                    q: language,
+                    access_token: global.globalAccessToken
+                }
+            });
+            const result = response.data.data;
+            for(const item in result){
+                console.log(result[item].key)
+                results.push(result[item].key);
             }
-        });
-        
-        const result = response.data.data // Trả về danh sách các key ngôn ngữ
-        console.log(result[0])
-        return result[0];
+        }
+        console.log(results);
+        return results;
     } catch (error) {
         console.error('Error fetching languages:', error.response.data);
         throw new Error('Failed to fetch languages');
     }
 };
-const list_language = async(languages)=>{
-    const result = [];  
-    for(const language of languages){
-        const language_key = await searchLanguages(language);
-        if (language_key) {
-            result.push(language_key);
-        } 
-    }
-    console.log(result)
-    return result;
-}
 //behaviors
-const searchBehavior = async (behavior) => {
+const searchBehavior = async (query) => {
+    const behaviors = query;
+    const results = [];
     try {
-        const response = await axios.get(
-            'https://graph.facebook.com/v13.0/search',
-            {
-                params: {
-                    q: behavior,
-                    type: 'adTargetingCategory',
-                    access_token: 'YOUR_ACCESS_TOKEN' // Thay YOUR_ACCESS_TOKEN bằng access token của bạn
+        for(const behavior of behaviors){
+            const response = await axios.get(
+                `https://graph.facebook.com/${global.globalversion}/search`,
+                {
+                    params: {
+                        q: behavior,
+                        type: "adTargetingCategory",
+						class: "behaviors",
+                        access_token: global.globalAccessToken
+                    }
                 }
-            }
-        );
-        const result = response.data.data;
-        console.log(result);
-		return result[0];
+            );
+            const result = response.data.data;
+				
+					results.push(result[0].id); 
+        }
+        console.log(results);
+		return results;
     } catch (error) {
         console.error("Error searching interests:", error.response ? error.response.data : error.message);
     }
 };
 
-const list_Behavior = async(behaviors)=>{
-    const result = [];
-    for(const behavior of behaviors){
-        const behavior_id = await searchBehavior(behavior);
-        if (behavior_id) {
-            result.push(behavior_id);
-        } 
-    }
-    console.log(result)
-    return result;
-}
 const createAds = async ( query ) => {
     try {
         
@@ -257,12 +248,12 @@ const createAds = async ( query ) => {
             age_min: query.minimumAge,
             age_max: query.maximumAge,
             genders: gender(query.gender),
-            interests: await list_interests(query.interests),
-            locales: [6],
+            interests: await searchInterest(query.interests),
+            locales: await searchLanguages(query.languages),
             publisher_platforms: [
                 "facebook"
-              ]
-            // behavior: await list_Behavior( query.behaviors)
+              ],
+            behaviors: await searchBehavior( query.behaviors)
         }
         // const accountId = query.accountId;
         // const pageId = query.pageId;
