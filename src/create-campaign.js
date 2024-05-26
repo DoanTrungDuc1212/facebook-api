@@ -81,7 +81,7 @@ const createAdCreative = async ( query) => {
             {
                 name: "Sample Creative",
                 object_story_spec: {
-                    page_id: query.pageId,
+                    page_id: global.globalPageId,
                     link_data: {
                         image_hash: imageHash,
                         link: `https://shopee.vn/`,

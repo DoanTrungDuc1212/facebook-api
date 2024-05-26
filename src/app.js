@@ -13,6 +13,7 @@ global.globalversion = "v19.0";
 global.globalAdAccountId = null;
 global.globalPageId= null;
 global.globalPageAccessToken=null
+global.globalBusinessId=null
 const routes = require('./routes'); 
 
 const app = express();
