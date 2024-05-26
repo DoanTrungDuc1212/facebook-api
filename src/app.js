@@ -10,6 +10,9 @@ const path = require('path');
 
 global.globalAccessToken = null;
 global.globalversion = "v19.0";
+global.globalAdAccountId = null;
+global.globalPageId= null;
+global.globalPageAccessToken=null
 const routes = require('./routes'); 
 
 const app = express();

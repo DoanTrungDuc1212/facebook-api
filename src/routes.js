@@ -21,7 +21,7 @@ module.exports = (function() {
 		res.render('account', { user: req.user , profilePicUrl});
 	});
 	// 'email', 'public_profile','publish_to_groups','pages_read_engagement', 'pages_manage_posts', 'pages_show_list', 'ads_management','pages_manage_ads'
-	router.get('/auth/facebook', passport.authenticate('facebook',{scope:[ 'public_profile', 'pages_show_list', 'ads_management','pages_manage_ads'] }));
+	router.get('/auth/facebook', passport.authenticate('facebook',{scope:['pages_read_engagement','public_profile', 'pages_show_list', 'ads_management','pages_manage_ads'] }));
 
 	router.get('/auth/facebook/callback',
 	  passport.authenticate('facebook', { successRedirect : '/', failureRedirect: '/login' }),
@@ -39,16 +39,45 @@ module.exports = (function() {
 		res.redirect('/login')
 	}
 
-	
-	router.get('/list_account', async (req, res)=>{
-		try{
-			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/me/adaccounts?fields=id,name&access_token=${global.globalAccessToken}`)
-			const list_account = response.data.data;
-			res.send(list_account);
-		}catch(error){
-			console.error("Error list_account:",error.response ? error.response.data : error.message );
+	router.get('/list_page', async(req, res)=>{
+		try {
+			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/me/accounts?fields=id,name,access_token&access_token=${global.globalAccessToken}`);
+			const pages = response.data.data;
+			global.globalPageAccessToken = response.data.data[0].access_token;
+			global.globalPageId = response.data.data[2].id;
+			console.log(global.globalPageAccessToken);
+			console.log(global.globalPageId)
+			res.send(pages);
+		} catch (error) {
+			console.error("Error list_page:", error.response ? error.response.data : error.message);
+			res.status(500).send('Failed to fetch list of pages');
 		}
 	})
+	
+	router.get('/list_business', async(req,res)=>{
+		try {
+			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/${global.globalPageId}?fields=about,business&access_token=${global.globalPageAccessToken}`);
+			global.globalBusinessId = response.data.business.id;
+			console.log(global.globalBusinessId);
+			res.send(global.globalBusinessId);
+		} catch (error) {
+			console.error('Error fetching business ID:', error.response ? error.response.data : error.message);
+			throw new Error('Failed to fetch business ID');
+		}
+	})
+	router.get('/list_account', async (req, res) => {
+		try {
+			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/${global.globalBusinessId}/owned_ad_accounts?fields=id,name&access_token=${global.globalAccessToken}`);
+			 
+			global.globalAdAccountId = response.data.data[0].id;
+			console.log(global.globalAdAccountId);
+			res.send(global.globalAdAccountId);
+		} catch (error) {
+			console.error('Error fetching ad accounts:', error.response ? error.response.data : error.message);
+			throw new Error('Failed to fetch ad accounts');
+		}
+	});
+	
 	router.get('/behaviors', async (req, res) => {
 		try {
 			const response = await axios.get(
@@ -57,6 +86,7 @@ module.exports = (function() {
 					params: {
 						type: "adTargetingCategory",
 						class: "behaviors",
+						q: "Sneaker Collection",
 						access_token: global.globalAccessToken
 					}
 				}
@@ -95,23 +125,8 @@ module.exports = (function() {
 			console.error("Error searching interests:", error.response ? error.response.data : error.message);
 		}
 	});
-	router.get('/list_page', async(req, res)=>{
-		try{
-			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/me/accounts?fields=id,name&access_token=${global.globalAccessToken}`)
-			const list_page_id = response.data.data;
-			res.send(list_page_id);
-		}catch (error) {
-			console.error("Error list_page:",error.response ? error.response.data : error.message );
-		}
-	})
-	router.get('/a',async(req, res)=>{
-		try{
-			const response = await axios.get(`https://2af8-171-241-69-82.ngrok-free.app/list_page`)
-			res.send(response.data);
-		}catch (error) {
-			console.error("Error list_page:",error.response ? error.response.data : error.message );
-		}
-	})
+	
+	
 	router.get('/searchInterest',async (req, res) => {
 		const interests = ["Fashion", "Sneakers"];
     	const results = [];
@@ -140,37 +155,7 @@ module.exports = (function() {
 			console.error("Error searching interests:", error.response ? error.response.data : error.message);
 		}
 	});
-	const searchInterest = async (interest) => {
-		try {
-			const response = await axios.get(
-				`https://graph.facebook.com/${global.globalversion}/search`,
-				{
-					params: {
-						fields: "id,name",
-						type: "adinterest",
-						q: interest,
-						access_token: global.globalAccessToken
-					}
-				}
-			);
-			const result = response.data.data;
-			return result[0];	
-		} catch (error) {
-			console.error("Error searching interests:", error.response ? error.response.data : error.message);
-		}
-	};
-	router.get('/list_interests',  async(req, res)=>{
-		const result = [];
-		const interests = ["Fashion", "Handbags"]
-		for(const interest of interests){
-			const interest_id = await searchInterest(interest);
-			if (interest_id) {
-				result.push(interest_id);
-			} 
-		}
-		console.log(result)
-		return result;
-	});
+	
 	router.get('/languages', async(req, res)=>{
 		try {
 			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/search`, {
@@ -187,10 +172,22 @@ module.exports = (function() {
 			throw new Error('Failed to fetch languages');
 		}
 	})
+	const bussiness = async()=>{
+		try{
+			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/me/businesses?fields=id&access_token=${globalAccessToken}`)
+			const businessId = response.data.data[0].id;
+            console.log('Business ID:', businessId);
+            return businessId;
+		}catch (error) {
+			console.error('Error fetching bussiness_id:', error.response.data);
+			throw new Error('Failed to fetch languages');
+		}
+	}
 	router.post	('/create-ad', async(req,res)=>{
 		try {
 			const query = req.body;
 			console.log(query);
+			console.log(global);
             res.status(200).send(await createAd( query));
         } catch (error) {
             console.error('Error creating ad:', error);

@@ -8,7 +8,7 @@ const fs = require('fs');
 const createCampaign = async (query) => {
     try {
         const response = await axios.post(
-            `https://graph.facebook.com/${global.globalversion}/act_${query.accountId}/campaigns`,
+            `https://graph.facebook.com/${global.globalversion}/${global.globalAdAccountId}/campaigns`,
             {
                 name: "Quảng cáo MIMI",
                 objective: 'OUTCOME_TRAFFIC',
@@ -34,10 +34,8 @@ const createCampaign = async (query) => {
 // Bước 3: Tạo nhóm quảng cáo
 const createAdSet = async (targeting, query, campaignId) => {
     try {
-        const daily_budget = (query.daily_max_amount + query.daily_minimum_amount)/2;
-        console.log(daily_budget);
         const response = await axios.post(
-            `https://graph.facebook.com/${global.globalversion}/act_${query.accountId}/adsets`,
+            `https://graph.facebook.com/${global.globalversion}/${global.globalAdAccountId}/adsets`,
             {
                 name: query.audienceName,
                 optimization_goal: "REACH",
@@ -69,7 +67,7 @@ const createAdCreative = async ( query) => {
         formData.append('filename', fs.createReadStream("./img/59163eeb9141c6011d8338a37fdfdc34.png"));
         formData.append('access_token', global.globalAccessToken);
         const imageResponse = await axios.post(
-            `https://graph.facebook.com/${global.globalversion}/act_${query.accountId}/adimages`,
+            `https://graph.facebook.com/${global.globalversion}/${global.globalAdAccountId}/adimages`,
             formData,
             {
                 headers: {
@@ -79,7 +77,7 @@ const createAdCreative = async ( query) => {
         );
         const imageHash = imageResponse.data.images[Object.keys(imageResponse.data.images)[0]].hash;
         const creativeResponse = await axios.post(
-            `https://graph.facebook.com/${global.globalversion}/act_${query.accountId}/adcreatives`,
+            `https://graph.facebook.com/${global.globalversion}/${global.globalAdAccountId}/adcreatives`,
             {
                 name: "Sample Creative",
                 object_story_spec: {
@@ -116,7 +114,7 @@ const createAdCreative = async ( query) => {
 const createAd = async ( query, adSetId, creativeId) => {
     try {
         const response = await axios.post(
-            `https://graph.facebook.com/${global.globalversion}/act_${query.accountId}/ads`,
+            `https://graph.facebook.com/${global.globalversion}/${global.globalAdAccountId}/ads`,
             {
                 name: "My Ad",
                 creative: {
@@ -130,11 +128,10 @@ const createAd = async ( query, adSetId, creativeId) => {
                     }
                 },
                 adset_id: adSetId,
-                status: "PAUSED",
+                status: "ACTIVE",
                 access_token: global.globalAccessToken
             }
         );
-
         // console.log("Ad created successfully. Ad ID:", response.data.id);
         console.log("Ad created successfully. Ad ID:", response.data.id);
 
@@ -145,7 +142,7 @@ const createAd = async ( query, adSetId, creativeId) => {
 };
 
 //interest
-const searchInterest = async (query) => {
+const       searchInterest = async (query) => {
     const interests = query;
     const results = [];
     try {
@@ -187,7 +184,6 @@ const searchLanguages =  async(query)=>{
     const languages = query;
     const results = [];
     try {
-
         for(const language of languages){
             const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/search`, {
                 params: {
@@ -227,9 +223,8 @@ const searchBehavior = async (query) => {
                     }
                 }
             );
-            const result = response.data.data;
-				
-					results.push(result[0].id); 
+            const result = response.data.data;	
+			results.push(result[0].id); 
         }
         console.log(results);
 		return results;
@@ -240,7 +235,6 @@ const searchBehavior = async (query) => {
 
 const createAds = async ( query ) => {
     try {
-        
         const targeting = {
             geo_locations: { 
                 countries: query.countries,
@@ -252,21 +246,9 @@ const createAds = async ( query ) => {
             locales: await searchLanguages(query.languages),
             publisher_platforms: [
                 "facebook"
-              ],
-            behaviors: await searchBehavior( query.behaviors)
+              ]
+            // behaviors: await searchBehavior( query.behaviors)
         }
-        // const accountId = query.accountId;
-        // const pageId = query.pageId;
-        // const countries = query.countries;
-        // const gender = query.gender;
-        // const age_max = query.age_max;
-        // const age_min = query.age_min;
-        // const interests = query.interests;
-        // const amount = query.amount
-        // const start_date = query.start_date;
-        // const end_date = query.end_date;
-        // const daily_minimum_amount = query.daily_minimum_amount;
-        // const daily_max_amount = query.daily_max_amount;
         console.log(targeting);
 
         const campaignId = await createCampaign(query);
