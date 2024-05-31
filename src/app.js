@@ -14,12 +14,19 @@ global.globalAdAccountId = null;
 global.globalPageId= null;
 global.globalPageAccessToken=null
 global.globalBusinessId=null
+global.globalCampainId=null
+global.globalAdId = null
+global.globalAdSetId = null
 const routes = require('./routes'); 
 
 const app = express();
-
- 
-
+let income = 1500
+if (income > 2500) {
+  var tax = 500
+} else {
+  var tax = 200
+}
+console.log(tax);
 // Passport session setup.
 passport.serializeUser(function(user, done) {
   done(null, user);

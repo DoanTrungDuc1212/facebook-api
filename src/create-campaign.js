@@ -21,9 +21,9 @@ const createCampaign = async (query) => {
         );
         
         if (response.data && response.data.id) {
-            const campaignId = response.data.id;
-            console.log(`Successfully created campaign with ID: `, campaignId);
-            return campaignId;
+            global.globalCampainId = response.data.id;
+            console.log(`Successfully created campaign with ID: `, global.globalCampainId);
+            return global.globalCampainId;
         } else {
             console.log('Failed to create campaign. No campaign ID returned.');
         }
@@ -51,6 +51,7 @@ const createAdSet = async (targeting, query, campaignId) => {
             }
         );
 
+        global.globalAdSetId = response.data.id;
         console.log("Ad Set created successfully. Ad Set ID:", response.data);
         // console.log("Ad Set created successfully. Ad Set ID:");
         return response.data.id;
@@ -132,8 +133,9 @@ const createAd = async ( query, adSetId, creativeId) => {
                 access_token: global.globalAccessToken
             }
         );
+        global.globalAdId = response.data.id;
         // console.log("Ad created successfully. Ad ID:", response.data.id);
-        console.log("Ad created successfully. Ad ID:", response.data.id);
+        console.log("Ad created successfully. Ad ID:", global.globalAdId);
 
     } catch (error) {
         //, error.response ? error.response.data : error.message
@@ -187,15 +189,15 @@ const searchLanguages =  async(query)=>{
         for(const language of languages){
             const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/search`, {
                 params: {
-                    fields: "key",
+                    fields: "key,name",
                     type: 'adlocale',
-                    q: language,
+                    q: "Vietnamese",
                     access_token: global.globalAccessToken
                 }
             });
             const result = response.data.data;
             for(const item in result){
-                console.log(result[item].key)
+                console.log(result[item].key +" " + result[item].name)
                 results.push(result[item].key);
             }
         }
