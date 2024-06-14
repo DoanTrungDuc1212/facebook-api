@@ -2,7 +2,7 @@ const express = require('express')
 const router = express.Router();
 const passport = require('passport')
 const axios = require('axios')
-const createAd = require('./create-campaign')
+const createAd = require('./facebook-campain')
 
 
 module.exports = (function () {
@@ -22,7 +22,7 @@ module.exports = (function () {
 	});
 	// 'email', 'public_profile','publish_to_groups','pages_read_engagement', 'pages_manage_posts', 'pages_show_list', 'ads_management','pages_manage_ads'
 	'ads_management', 'business_management', 'manage_pages', 'pages_read_engagement'	
-	router.get('/auth/facebook', passport.authenticate('facebook', { scope: ['pages_manage_ads','business_management','manage_pages', 'pages_read_engagement', 'pages_show_list', 'ads_management'] }));
+	router.get('/auth/facebook', passport.authenticate('facebook', { scope: ['pages_manage_ads','business_management', 'pages_read_engagement', 'pages_show_list', 'ads_management'] }));
 
 	router.get('/auth/facebook/callback',
 		passport.authenticate('facebook', { successRedirect: '/', failureRedirect: '/login' }),
@@ -45,7 +45,7 @@ module.exports = (function () {
 			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/me/accounts?access_token=${global.globalAccessToken}`);
 			const pages = response.data.data;
 			global.globalPageAccessToken = response.data.data[0].access_token;
-			global.globalPageId = response.data.data[0].id;
+			global.globalPageId = response.data.data[2].id;
 			console.log(global.globalPageAccessToken);
 			console.log(global.globalPageId)
 			res.send(pages);
@@ -191,40 +191,6 @@ module.exports = (function () {
 			throw new Error('Failed to fetch ad accounts');
 		}
 	});
-
-	router.get('/person_seen', async (req, res) => {
-		try {
-			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/120211354596200555/insights`, {
-				params: {
-					access_token: global.globalAccessToken,
-					metric: 'impressions', // Đây là metric cho số lượt tiếp cận
-					period: 'day', // Bạn có thể chỉ định khoảng thời gian (ngày, tuần, tháng)
-				}
-			});
-			res.send(response.data);
-		} catch (error) {
-			console.error('Error fetching ad person:', error.response ? error.response.data : error.message);
-			throw new Error('Failed to fetch person');
-		}
-	})
-	router.get('/behaviors', async (req, res) => {
-		try {
-			const response = await axios.get(
-				`https://graph.facebook.com/${global.globalversion}/search`,
-				{
-					params: {
-						type: "adTargetingCategory",
-						class: "behaviors",
-						q: "Sneaker Collection",
-						access_token: global.globalAccessToken
-					}
-				}
-			);
-			res.send(response.data)
-		} catch (error) {
-			console.error("Error searching interests:", error.response ? error.response.data : error);
-		}
-	});
 	router.get('/seen', async (req, res) => {
 		try {
 			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/120211319812070555/previews`,
@@ -244,91 +210,72 @@ module.exports = (function () {
 		const url = `https://adsmanager.facebook.com/adsmanager/manage/campaigns/edit?act=${global.globalAdAccountId}&business_id=${global.globalBusinessId}&selected_campaign_ids=${global.globalCampainId}&global_scope_id=${global.globalBusinessId}`
 		res.redirect(url);
 	});
-	router.get('/behavior', async (req, res) => {
-		const behaviors = [
-			"Online Shopping",
-			"Frequent Buyer"
-		]
-		const results = []
+	// router.get('/behavior', async (req, res) => {
+	// 	const behaviors = [
+	// 		"Online Shopping",
+	// 		"Frequent Buyer"
+	// 	]
+	// 	const results = []
+	// 	try {
+	// 		for (const behavior of behaviors) {
+	// 			const response = await axios.get(
+	// 				`https://graph.facebook.com/${global.globalversion}/search`,
+	// 				{
+	// 					params: {
+	// 						type: "adTargetingCategory",
+	// 						class: "behaviors",
+	// 						q: behavior,
+	// 						access_token: global.globalAccessToken
+	// 					}
+	// 				}
+	// 			);
+	// 			const result = response.data.data;
+	// 			for (const item in result) {
+	// 				results.push(result);
+	// 			}
+	// 		}
+	// 		res.send(results);
+	// 	} catch (error) {
+	// 		console.error("Error searching interests:", error.response ? error.response.data : error.message);
+	// 	}
+	// });
+	router.get('/AdInsights', async (req, res) => {
 		try {
-			for (const behavior of behaviors) {
-				const response = await axios.get(
-					`https://graph.facebook.com/${global.globalversion}/search`,
-					{
-						params: {
-							type: "adTargetingCategory",
-							class: "behaviors",
-							q: behavior,
-							access_token: global.globalAccessToken
-						}
-					}
-				);
-				const result = response.data.data;
-				for (const item in result) {
-					results.push(result);
-				}
-			}
-			res.send(results);
-		} catch (error) {
-			console.error("Error searching interests:", error.response ? error.response.data : error.message);
-		}
-	});
-	router.get('/searchInterest', async (req, res) => {
-		const interests = ["Fashion", "Sneakers"];
-		const results = [];
-		try {
-			for (const interest of interests) {
-				const response = await axios.get(
-					`https://graph.facebook.com/${global.globalversion}/search`,
-					{
-						params: {
-							fields: "id,name",
-							type: "adinterest",
-							q: interest,
-							access_token: global.globalAccessToken
-						}
-					}
-				);
-				const result = response.data.data;
-				console.log(interest);
-				for (const item in result) {
-					console.log(result[item])
-					results.push(result[item]);
-				}
-			}
-			res.json(results);
-		} catch (error) {
-			console.error("Error searching interests:", error.response ? error.response.data : error.message);
-		}
-	});
-
-	router.get('/languages', async (req, res) => {
-		try {
-			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/search`, {
+			const response = await axios.get(`https://graph.facebook.com/${globalversion}/120211436036470555/insights`, {
 				params: {
-					fields: "key,name",
-					type: 'adlocale',
-					q: "Tiếng Đức",
-					access_token: global.globalAccessToken
+					access_token: globalAccessToken,
+					fields: 'impressions,reach,spend' // Thêm reach vào danh sách các trường
 				}
 			});
-			res.json(response.data.data) // Trả về danh sách các key ngôn ngữ
+			res.send(response.data); // Trả về dữ liệu chi tiết của quảng cáo
 		} catch (error) {
-			console.error('Error fetching languages:', error.response.data);
-			throw new Error('Failed to fetch languages');
+			console.error('Error fetching ad insights:', error.response ? error.response.data : error.message);
+			throw error;
 		}
-	})
-	const bussiness = async () => {
+	});
+	router.get('/EstimatedDailyResults',async (req, res) => {
 		try {
-			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/me/businesses?fields=id&access_token=${globalAccessToken}`)
-			const businessId = response.data.data[0].id;
-			console.log('Business ID:', businessId);
-			return businessId;
+			const response = await axios.get(`https://graph.facebook.com/${global.globalversion}/${global.globalAdAccountId}/reachestimate`, {
+				params: {
+					access_token: globalAccessToken,
+					optimization_goal: "REACH",
+					billing_event: "IMPRESSIONS",
+					targeting_spec: JSON.stringify({
+						geo_locations: {
+							countries: ['US']
+						},
+						age_min: 18,
+						age_max: 65
+					}),
+					bid_amount: 50000
+				}
+			});
+	
+			res.send(response.data);
 		} catch (error) {
-			console.error('Error fetching bussiness_id:', error.response.data);
-			throw new Error('Failed to fetch languages');
+			console.error('Error fetching estimated daily results:', error.response ? error.response.data : error.message);
 		}
-	}
+	});
 	router.post('/create-ad', async (req, res) => {
 		try {
 			const query = req.body;

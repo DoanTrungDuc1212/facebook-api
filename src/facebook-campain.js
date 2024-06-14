@@ -13,8 +13,6 @@ const createCampaign = async (query) => {
                 name: "Quảng cáo MIMI",
                 objective: 'OUTCOME_TRAFFIC',
                 status: 'ACTIVE',
-                daily_max_amount: query.daily_max_amount,
-                daily_minimum_amount: query.daily_minimum_amount,
                 special_ad_categories: [],
                 access_token: global.globalAccessToken
             }
@@ -34,21 +32,28 @@ const createCampaign = async (query) => {
 // Bước 3: Tạo nhóm quảng cáo
 const createAdSet = async (targeting, query, campaignId) => {
     try {
-        const response = await axios.post(
-            `https://graph.facebook.com/${global.globalversion}/${global.globalAdAccountId}/adsets`,
-            {
+        const adset = {
                 name: query.audienceName,
+                campaign_id: campaignId,
                 optimization_goal: "REACH",
                 billing_event: "IMPRESSIONS",
-                bid_amount: 5000,
-                daily_budget: query.amount,
-                campaign_id: campaignId,
+                bid_amount: 50000, //1000 lần
                 targeting: targeting,
                 start_time: query.start_date,
                 end_time:  query.end_date, 
                 status: "ACTIVE",
                 access_token: global.globalAccessToken
-            }
+        }
+        if(query.budget === "lifetime_budget"){
+            adset.lifetime_budget = query.amount
+        } else{
+            adset.min_daily_budget_imp = query.daily_minimum_amount;
+            adset.max_daily_budget_imp = query.daily_maximum_amount;
+            adset.daily_budget = query.amount;
+        };
+        const response = await axios.post(
+            `https://graph.facebook.com/${global.globalversion}/${global.globalAdAccountId}/adsets`,
+            adset
         );
 
         global.globalAdSetId = response.data.id;
@@ -191,7 +196,7 @@ const searchLanguages =  async(query)=>{
                 params: {
                     fields: "key,name",
                     type: 'adlocale',
-                    q: "Vietnamese",
+                    q: language,
                     access_token: global.globalAccessToken
                 }
             });

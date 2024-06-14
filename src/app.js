@@ -6,10 +6,10 @@ const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const config = require('./config');
 const path = require('path');
+const app = express();
 
-
-global.globalAccessToken = null;
-global.globalversion = "v19.0";
+global.globalAccessToken = "EAAGlXQeuJRABOZB7ZAZCGZCEDsRbLNGcvGt82CrefhVvZB3ZAumhHJxO6np279NVUSsWqdWvxRm93XKDj2TxPXOMm3emuWPbTLzDs5efixxgWhQCZCCx5viV7iLqZAlqEnfFTRDmlnsz5ZATzLWKxK0hN8Ta9faBP0XZBxVLHiAagMJEaRT4tZA7megZAO4pDbIyZCXpCaaExQw4BswZDZD";
+global.globalversion = "v20.0";
 global.globalAdAccountId = null;
 global.globalPageId= null;
 global.globalPageAccessToken=null
@@ -17,16 +17,7 @@ global.globalBusinessId=null
 global.globalCampainId=null
 global.globalAdId = null
 global.globalAdSetId = null
-const routes = require('./routes'); 
-
-const app = express();
-let income = 1500
-if (income > 2500) {
-  var tax = 500
-} else {
-  var tax = 200
-}
-console.log(tax);
+const routes_1 = require('./api_facebook'); 
 // Passport session setup.
 passport.serializeUser(function(user, done) {
   done(null, user);
@@ -67,7 +58,7 @@ app.use(session({
 app.use(passport.initialize());
 app.use(passport.session());
 
-app.use('/', routes);
+app.use('/', routes_1);
 
 const port = 3000;
 app.listen(port, () => {
